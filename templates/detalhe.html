@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="py-5 mt-5">
+  <div class="container">
+    <div class="mb-4">
+      <a href="{{ url_for('index') }}" class="text-link">&larr; Voltar para vitrine</a>
+      <h1 class="detail-title mt-2">{{ imovel.titulo }}</h1>
+      <p class="detail-location mb-0">{{ imovel.bairro }}, {{ imovel.cidade }}</p>
+    </div>
+
+    <div class="gallery-grid mb-4">
+      {% if imovel.imagens %}
+        {% set capa = imovel.imagens[0] %}
+        <a href="{{ capa.url_1600 }}" class="gallery-main glightbox" data-gallery="imovel-gallery">
+          <img src="{{ capa.url_800 }}" loading="eager" alt="{{ imovel.titulo }}">
+        </a>
+        <div class="gallery-side">
+          {% for img in imovel.imagens[1:5] %}
+          <a href="{{ img.url_1600 }}" class="glightbox" data-gallery="imovel-gallery">
+            <img src="{{ img.url_800 }}" loading="lazy" alt="{{ imovel.titulo }}">
+          </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="detail-block">
+          <p class="detail-price">{{ imovel.preco|brl }}</p>
+          <ul class="property-specs large">
+            <li><i class="bi bi-door-open"></i> {{ imovel.quartos }} quartos</li>
+            <li><i class="bi bi-stars"></i> {{ imovel.suites }} suítes</li>
+            <li><i class="bi bi-droplet"></i> {{ imovel.banheiros }} banheiros</li>
+            <li><i class="bi bi-car-front"></i> {{ imovel.vagas }} vagas</li>
+            <li><i class="bi bi-aspect-ratio"></i> {{ imovel.area_privativa|int }} m2 privativos</li>
+            {% if imovel.area_total %}<li><i class="bi bi-bounding-box"></i> {{ imovel.area_total|int }} m2 total</li>{% endif %}
+            {% if imovel.iptu %}<li><i class="bi bi-receipt"></i> IPTU {{ imovel.iptu|brl }}</li>{% endif %}
+            {% if imovel.condominio %}<li><i class="bi bi-buildings"></i> Condomínio {{ imovel.condominio|brl }}</li>{% endif %}
+          </ul>
+          <h2>Descrição</h2>
+          <p>{{ imovel.descricao }}</p>
+        </div>
+
+        <div class="detail-block mt-4">
+          <h2>Localização</h2>
+          <div id="mapa-imovel" class="map-box"></div>
+          <p class="mt-2 mb-0 text-secondary">{{ imovel.endereco or (imovel.bairro ~ ', ' ~ imovel.cidade) }}</p>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <aside class="sticky-sidebar">
+          <div class="lead-box">
+            <h3>Solicite Atendimento</h3>
+            <p>Receba uma consultoria personalizada para este imóvel.</p>
+            <form class="row g-2" id="contactForm">
+              <div class="col-12"><input class="form-control" id="contactName" placeholder="Nome completo"></div>
+              <div class="col-12"><input class="form-control" id="contactPhone" placeholder="Telefone/WhatsApp"></div>
+              <div class="col-12"><input class="form-control" id="contactEmail" placeholder="E-mail"></div>
+              <div class="col-12"><textarea class="form-control" id="contactMessage" rows="3" placeholder="Mensagem"></textarea></div>
+              <div class="col-12 d-grid"><button type="submit" class="btn btn-cta">Quero falar com corretor</button></div>
+            </form>
+          </div>
+          <a class="btn-whatsapp-floating" href="https://wa.me/5571981330465?text=Tenho%20interesse%20no%20imóvel%20{{ imovel.id }}%20-%20{{ imovel.titulo|urlencode }}" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp"></i> WhatsApp Imediato
+          </a>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  GLightbox({ selector: '.glightbox' });
+
+  const contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const nome = document.getElementById('contactName')?.value?.trim() || '';
+      const telefone = document.getElementById('contactPhone')?.value?.trim() || '';
+      const email = document.getElementById('contactEmail')?.value?.trim() || '';
+      const mensagemLivre = document.getElementById('contactMessage')?.value?.trim() || '';
+      const linhas = [
+        `Tenho interesse no imóvel {{ imovel.id }} - {{ imovel.titulo|replace("`", "") }}`,
+        nome ? `Nome: ${nome}` : '',
+        telefone ? `Telefone: ${telefone}` : '',
+        email ? `E-mail: ${email}` : '',
+        mensagemLivre ? `Mensagem: ${mensagemLivre}` : '',
+      ].filter(Boolean);
+      const texto = encodeURIComponent(linhas.join('\n'));
+      window.open(`https://wa.me/5571981330465?text=${texto}`, '_blank', 'noopener');
+    });
+  }
+
+  {% if imovel.latitude and imovel.longitude %}
+  const lat = {{ imovel.latitude }};
+  const lng = {{ imovel.longitude }};
+  const map = L.map('mapa-imovel').setView([lat, lng], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  L.marker([lat, lng]).addTo(map).bindPopup('{{ imovel.titulo|replace("'", "\\'") }}');
+  {% endif %}
+</script>
+{% endblock %}

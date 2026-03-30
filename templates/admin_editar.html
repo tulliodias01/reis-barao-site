@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="py-5 mt-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+      <div>
+        <h1 class="h3 mb-0">Editar Imovel</h1>
+        <small class="text-secondary">ID {{ imovel.id }} • slug: {{ imovel.slug }}</small>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ imovel.url_publica }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">Ver pagina</a>
+        <a href="{{ url_for('admin') }}" class="btn btn-outline-dark btn-sm">Voltar</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="lead-box">
+          <form method="post" enctype="multipart/form-data" class="row g-3" id="form-editar-imovel">
+            <div class="col-12">
+              <label class="form-label">Titulo</label>
+              <input name="titulo" class="form-control" value="{{ imovel.titulo }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cidade</label>
+              <div class="position-relative">
+                <input name="cidade" id="adminCidade" class="form-control" value="{{ imovel.cidade }}" placeholder="Ex: Salvador, Lauro de Freitas, Camacari" autocomplete="off" required>
+                <div id="cidadeSuggestions" class="autocomplete-list"></div>
+              </div>
+              <small id="cidadeSelection" class="autocomplete-selection text-secondary d-none"></small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Bairro</label>
+              <div class="position-relative">
+                <input name="bairro" id="adminBairro" class="form-control" value="{{ imovel.bairro }}" placeholder="Ex: Stella Maris, Pituba, Itacimirim" autocomplete="off" required>
+                <div id="bairroSuggestions" class="autocomplete-list"></div>
+              </div>
+              <small id="bairroSelection" class="autocomplete-selection text-secondary d-none"></small>
+            </div>
+            <div class="col-12">
+              <small class="text-secondary">Cidade e bairro aceitam digitacao livre. As listas servem apenas como sugestao.</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Endereco</label>
+              <input name="endereco" class="form-control" value="{{ imovel.endereco or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">CEP</label>
+              <input id="cepBusca" name="cep" type="text" class="form-control" inputmode="numeric" maxlength="9" value="{{ imovel.cep or '' }}" placeholder="CEP (ex: 40390-070)">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Preco</label>
+              <input name="preco" type="text" inputmode="numeric" class="form-control brl-number" value="{{ imovel.preco or '' }}" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">IPTU</label>
+              <input name="iptu" type="text" inputmode="numeric" class="form-control brl-number" value="{{ imovel.iptu or '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Condominio</label>
+              <input name="condominio" type="text" inputmode="numeric" class="form-control brl-number" value="{{ imovel.condominio or '' }}">
+            </div>
+
+            <div class="col-md-3"><input name="quartos" type="number" class="form-control" value="{{ imovel.quartos }}" placeholder="Quartos"></div>
+            <div class="col-md-3"><input name="suites" type="number" class="form-control" value="{{ imovel.suites }}" placeholder="Suites"></div>
+            <div class="col-md-3"><input name="banheiros" type="number" class="form-control" value="{{ imovel.banheiros }}" placeholder="Banheiros"></div>
+            <div class="col-md-3"><input name="vagas" type="number" class="form-control" value="{{ imovel.vagas }}" placeholder="Vagas"></div>
+            <div class="col-md-6"><input name="area_privativa" type="number" step="0.01" class="form-control" value="{{ imovel.area_privativa }}" placeholder="Area privativa m2" required></div>
+            <div class="col-md-6"><input name="area_total" type="number" step="0.01" class="form-control" value="{{ imovel.area_total or '' }}" placeholder="Area total m2"></div>
+
+            <div class="col-md-8">
+              <label class="form-label">Buscar coordenadas</label>
+              <input id="buscaEnderecoHelper" type="text" class="form-control" value="Usa o CEP e prioriza endereco + bairro + cidade do formulario." disabled>
+            </div>
+            <div class="col-md-4 d-grid">
+              <button type="button" id="btnBuscarCep" class="btn btn-outline-dark">Buscar coordenadas por CEP</button>
+            </div>
+            <div class="col-md-6"><input name="latitude" type="number" step="any" class="form-control" value="{{ imovel.latitude or '' }}" placeholder="Latitude"></div>
+            <div class="col-md-6"><input name="longitude" type="number" step="any" class="form-control" value="{{ imovel.longitude or '' }}" placeholder="Longitude"></div>
+            <div class="col-12"><small id="cepStatus" class="text-secondary"></small></div>
+
+            <div class="col-12">
+              <label class="form-label">Descricao</label>
+              <textarea name="descricao" class="form-control" rows="6">{{ imovel.descricao }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Preview do mapa</label>
+              <div id="mapaPreviewAdmin" class="map-box admin-map-preview {% if not (imovel.latitude and imovel.longitude) %}d-none{% endif %}"></div>
+              <small id="mapaPreviewStatus" class="text-secondary">
+                {% if imovel.latitude and imovel.longitude %}
+                Mapa carregado com a localizacao atual.
+                {% else %}
+                Preencha o CEP ou informe latitude e longitude para visualizar o mapa.
+                {% endif %}
+              </small>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Informacoes internas (somente admin)</label>
+              <textarea name="info_interna" class="form-control" rows="4" placeholder="Ex: Proprietario / Telefone">{{ imovel.info_interna or '' }}</textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Categorias</label>
+              <div class="d-flex gap-3 flex-wrap">
+                {% set selected = imovel.categorias | map(attribute='id') | list %}
+                {% for categoria in categorias %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="categorias" value="{{ categoria.id }}" id="cat-{{ categoria.id }}"
+                         {% if categoria.id in selected %}checked{% endif %}>
+                  <label class="form-check-label" for="cat-{{ categoria.id }}">{{ categoria.nome }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="destaque" id="destaque" {% if imovel.destaque %}checked{% endif %}><label class="form-check-label" for="destaque">Destaque</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="novo" id="novo" {% if imovel.novo %}checked{% endif %}><label class="form-check-label" for="novo">Novo</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="ativo" id="ativo" {% if imovel.ativo %}checked{% endif %}><label class="form-check-label" for="ativo">Ativo no site</label></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Adicionar novas imagens</label>
+              <input type="file" name="imagens" class="form-control" multiple>
+            </div>
+
+            <div class="col-12 d-grid">
+              <button class="btn btn-cta" type="submit">Salvar Alteracoes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="lead-box">
+          <h2 class="h5 mb-3">Galeria Atual</h2>
+          {% if imovel.imagens %}
+          <div class="d-flex flex-column gap-3">
+            {% for img in imovel.imagens %}
+            <label class="border rounded p-2 d-block admin-gallery-item">
+              <img src="{{ img.url_400 }}" class="img-fluid rounded mb-2" alt="Imagem {{ img.id }}">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="capa_imagem_id" value="{{ img.id }}"
+                       form="form-editar-imovel" {% if img.eh_capa %}checked{% endif %}>
+                <label class="form-check-label">Definir como capa</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="remover_imagens" value="{{ img.id }}" form="form-editar-imovel">
+                <label class="form-check-label text-danger">Remover</label>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-secondary mb-0">Sem imagens cadastradas.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const btnCep = document.getElementById('btnBuscarCep');
+  const inputCep = document.getElementById('cepBusca');
+  const statusCep = document.getElementById('cepStatus');
+  const inputLat = document.querySelector('input[name="latitude"]');
+  const inputLng = document.querySelector('input[name="longitude"]');
+  const inputCidade = document.getElementById('adminCidade');
+  const inputBairro = document.getElementById('adminBairro');
+  const inputEndereco = document.querySelector('input[name="endereco"]');
+  const cidadeSuggestions = document.getElementById('cidadeSuggestions');
+  const bairroSuggestions = document.getElementById('bairroSuggestions');
+  const cidadeSelection = document.getElementById('cidadeSelection');
+  const bairroSelection = document.getElementById('bairroSelection');
+  const mapaContainer = document.getElementById('mapaPreviewAdmin');
+  const mapaStatus = document.getElementById('mapaPreviewStatus');
+  let mapaPreview;
+  let mapaMarker;
+  let bairrosRequestId = 0;
+  let cidadesRequestId = 0;
+  let cidadeItems = [];
+  let bairroItems = [];
+  let cidadeActiveIndex = -1;
+  let bairroActiveIndex = -1;
+
+  function normalizeCep(value) {
+    const digits = (value || '').replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+
+  function updateMapPreview(lat, lng) {
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+    const valid = Number.isFinite(parsedLat) && Number.isFinite(parsedLng);
+
+    if (!mapaContainer || !mapaStatus) return;
+
+    if (!valid) {
+      mapaContainer.classList.add('d-none');
+      mapaStatus.textContent = 'Preencha o CEP ou informe latitude e longitude para visualizar o mapa.';
+      return;
+    }
+
+    mapaContainer.classList.remove('d-none');
+    mapaStatus.textContent = 'Mapa atualizado com a localizacao informada.';
+
+    if (!mapaPreview) {
+      mapaPreview = L.map(mapaContainer).setView([parsedLat, parsedLng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(mapaPreview);
+      mapaMarker = L.marker([parsedLat, parsedLng]).addTo(mapaPreview);
+    } else {
+      mapaPreview.setView([parsedLat, parsedLng], 15);
+      mapaMarker.setLatLng([parsedLat, parsedLng]);
+      setTimeout(() => mapaPreview.invalidateSize(), 0);
+    }
+  }
+
+  function setSelectionLabel(element, text, prefix) {
+    if (!element) return;
+    if (!text) {
+      element.textContent = '';
+      element.classList.add('d-none');
+      return;
+    }
+    element.textContent = `${prefix}: ${text}`;
+    element.classList.remove('d-none');
+  }
+
+  function applyActiveState(container, activeIndex) {
+    Array.from(container?.querySelectorAll('.autocomplete-item') || []).forEach((button, index) => {
+      button.classList.toggle('active', index === activeIndex);
+    });
+  }
+
+  function renderSuggestions(container, items, onSelect, emptyText, type) {
+    if (!container) return;
+    if (!items.length) {
+      container.innerHTML = emptyText ? `<div class="autocomplete-empty">${emptyText}</div>` : '';
+      container.classList.toggle('show', Boolean(emptyText));
+      if (type === 'cidade') cidadeActiveIndex = -1;
+      if (type === 'bairro') bairroActiveIndex = -1;
+      return;
+    }
+
+    container.innerHTML = items.map((item) => `<button type="button" class="autocomplete-item">${item}</button>`).join('');
+    container.classList.add('show');
+    Array.from(container.querySelectorAll('.autocomplete-item')).forEach((button, index) => {
+      button.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        onSelect(items[index]);
+      });
+    });
+    if (type === 'cidade') {
+      cidadeItems = items;
+      cidadeActiveIndex = -1;
+    }
+    if (type === 'bairro') {
+      bairroItems = items;
+      bairroActiveIndex = -1;
+    }
+  }
+
+  function closeSuggestions(container) {
+    if (!container) return;
+    container.classList.remove('show');
+    container.innerHTML = '';
+  }
+
+  function selectCidade(cidade) {
+    inputCidade.value = cidade;
+    setSelectionLabel(cidadeSelection, cidade, 'Cidade selecionada');
+    closeSuggestions(cidadeSuggestions);
+    atualizarListaBairrosPorCidade();
+  }
+
+  function selectBairro(bairro) {
+    inputBairro.value = bairro;
+    setSelectionLabel(bairroSelection, bairro, 'Bairro selecionado');
+    closeSuggestions(bairroSuggestions);
+  }
+
+  async function atualizarListaBairrosPorCidade() {
+    if (!inputCidade || !bairroSuggestions) return;
+    const cidade = (inputCidade.value || '').trim();
+    const termo = (inputBairro.value || '').trim();
+    const requestId = ++bairrosRequestId;
+
+    try {
+      const params = new URLSearchParams({ cidade, q: termo });
+      const res = await fetch(`/api/bairros?${params.toString()}`);
+      const data = await res.json();
+      if (requestId !== bairrosRequestId) return;
+      renderSuggestions(
+        bairroSuggestions,
+        data.items || [],
+        selectBairro,
+        cidade ? 'Nenhum bairro encontrado para essa cidade.' : 'Digite ou escolha uma cidade primeiro.',
+        'bairro'
+      );
+    } catch (e) {
+      if (requestId !== bairrosRequestId) return;
+      closeSuggestions(bairroSuggestions);
+    }
+  }
+
+  async function atualizarListaCidades() {
+    if (!inputCidade || !cidadeSuggestions) return;
+    const termo = (inputCidade.value || '').trim();
+    const requestId = ++cidadesRequestId;
+
+    try {
+      const res = await fetch(`/api/cidades?q=${encodeURIComponent(termo)}`);
+      const data = await res.json();
+      if (requestId !== cidadesRequestId) return;
+      renderSuggestions(cidadeSuggestions, data.items || [], selectCidade, 'Nenhuma cidade encontrada.', 'cidade');
+    } catch (e) {
+      if (requestId !== cidadesRequestId) return;
+      closeSuggestions(cidadeSuggestions);
+    }
+  }
+
+  async function buscarCep() {
+    const cep = (inputCep?.value || '').trim();
+    if (!cep) {
+      statusCep.textContent = 'Informe um CEP para buscar.';
+      return;
+    }
+    statusCep.textContent = 'Consultando localizacao...';
+    try {
+      const params = new URLSearchParams({
+        cep,
+        endereco: inputEndereco?.value || '',
+        bairro: inputBairro?.value || '',
+        cidade: inputCidade?.value || ''
+      });
+      const res = await fetch(`/api/geocode/cep?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) {
+        statusCep.textContent = data.error || 'Nao foi possivel localizar o CEP.';
+        return;
+      }
+      if (inputLat) inputLat.value = data.latitude ?? '';
+      if (inputLng) inputLng.value = data.longitude ?? '';
+      if (inputEndereco && data.endereco_formatado && !inputEndereco.value) inputEndereco.value = data.endereco_formatado;
+      if (inputCidade && data.cidade && !inputCidade.value) inputCidade.value = data.cidade;
+      if (inputBairro && data.bairro && !inputBairro.value) inputBairro.value = data.bairro;
+      statusCep.textContent = 'Coordenadas preenchidas com sucesso.';
+      updateMapPreview(data.latitude, data.longitude);
+    } catch (e) {
+      statusCep.textContent = 'Falha na consulta. Tente novamente.';
+    }
+  }
+
+  if (btnCep) btnCep.addEventListener('click', buscarCep);
+  if (inputCep) {
+    inputCep.addEventListener('input', () => {
+      inputCep.value = normalizeCep(inputCep.value);
+      const digits = inputCep.value.replace(/\D/g, '');
+      if (digits.length === 8) buscarCep();
+    });
+    inputCep.addEventListener('blur', () => {
+      const digits = inputCep.value.replace(/\D/g, '');
+      if (digits.length === 8) buscarCep();
+    });
+    inputCep.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        buscarCep();
+      }
+    });
+  }
+
+  if (inputCidade) {
+    let cidadeDebounce;
+    inputCidade.addEventListener('input', () => {
+      setSelectionLabel(cidadeSelection, inputCidade.value.trim(), 'Cidade digitada');
+      clearTimeout(cidadeDebounce);
+      cidadeDebounce = setTimeout(() => {
+        atualizarListaCidades();
+        atualizarListaBairrosPorCidade();
+      }, 250);
+    });
+    inputCidade.addEventListener('focus', atualizarListaCidades);
+    inputCidade.addEventListener('change', () => {
+      closeSuggestions(cidadeSuggestions);
+      setSelectionLabel(cidadeSelection, inputCidade.value.trim(), 'Cidade informada');
+      atualizarListaBairrosPorCidade();
+    });
+    inputCidade.addEventListener('blur', () => setTimeout(() => closeSuggestions(cidadeSuggestions), 150));
+    inputCidade.addEventListener('keydown', (event) => {
+      if (!cidadeSuggestions.classList.contains('show') || !cidadeItems.length) return;
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        cidadeActiveIndex = (cidadeActiveIndex + 1) % cidadeItems.length;
+        applyActiveState(cidadeSuggestions, cidadeActiveIndex);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        cidadeActiveIndex = (cidadeActiveIndex - 1 + cidadeItems.length) % cidadeItems.length;
+        applyActiveState(cidadeSuggestions, cidadeActiveIndex);
+      } else if (event.key === 'Enter' && cidadeActiveIndex >= 0) {
+        event.preventDefault();
+        selectCidade(cidadeItems[cidadeActiveIndex]);
+      } else if (event.key === 'Escape') {
+        closeSuggestions(cidadeSuggestions);
+      }
+    });
+  }
+
+  if (inputBairro) {
+    let bairroDebounce;
+    inputBairro.addEventListener('input', () => {
+      setSelectionLabel(bairroSelection, inputBairro.value.trim(), 'Bairro digitado');
+      clearTimeout(bairroDebounce);
+      bairroDebounce = setTimeout(atualizarListaBairrosPorCidade, 250);
+    });
+    inputBairro.addEventListener('focus', atualizarListaBairrosPorCidade);
+    inputBairro.addEventListener('change', () => setSelectionLabel(bairroSelection, inputBairro.value.trim(), 'Bairro informado'));
+    inputBairro.addEventListener('blur', () => setTimeout(() => closeSuggestions(bairroSuggestions), 150));
+    inputBairro.addEventListener('keydown', (event) => {
+      if (!bairroSuggestions.classList.contains('show') || !bairroItems.length) return;
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        bairroActiveIndex = (bairroActiveIndex + 1) % bairroItems.length;
+        applyActiveState(bairroSuggestions, bairroActiveIndex);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        bairroActiveIndex = (bairroActiveIndex - 1 + bairroItems.length) % bairroItems.length;
+        applyActiveState(bairroSuggestions, bairroActiveIndex);
+      } else if (event.key === 'Enter' && bairroActiveIndex >= 0) {
+        event.preventDefault();
+        selectBairro(bairroItems[bairroActiveIndex]);
+      } else if (event.key === 'Escape') {
+        closeSuggestions(bairroSuggestions);
+      }
+    });
+  }
+
+  [inputLat, inputLng].forEach((input) => {
+    input?.addEventListener('input', () => updateMapPreview(inputLat?.value, inputLng?.value));
+  });
+
+  function formatThousandsBR(value) {
+    const digits = (value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    return Number(digits).toLocaleString('pt-BR');
+  }
+
+  document.querySelectorAll('.brl-number').forEach((input) => {
+    input.value = formatThousandsBR(input.value);
+    input.addEventListener('input', () => {
+      input.value = formatThousandsBR(input.value);
+    });
+    input.addEventListener('blur', () => {
+      input.value = formatThousandsBR(input.value);
+    });
+  });
+
+  updateMapPreview(inputLat?.value, inputLng?.value);
+  setSelectionLabel(cidadeSelection, inputCidade?.value.trim(), 'Cidade informada');
+  setSelectionLabel(bairroSelection, inputBairro?.value.trim(), 'Bairro informado');
+  document.addEventListener('click', (event) => {
+    if (!cidadeSuggestions?.parentElement?.contains(event.target)) closeSuggestions(cidadeSuggestions);
+    if (!bairroSuggestions?.parentElement?.contains(event.target)) closeSuggestions(bairroSuggestions);
+  });
+</script>
+{% endblock %}

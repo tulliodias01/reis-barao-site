@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-luxury d-flex align-items-center">
+  <div class="hero-main-image-wrap" aria-hidden="true">
+    <img src="{{ hero_cover }}" alt="" class="hero-main-image">
+  </div>
+  <div class="container">
+    <div class="row g-4 hero-content-row">
+      <div class="col-lg-7 hero-copy-col d-flex">
+        <div class="hero-copy-panel h-100">
+          <span class="hero-kicker">REIS BARÃO - IMÓVEIS À VENDA E LOCAÇÃO</span>
+          <h1 class="hero-title">Imóveis selecionados no Rio de Janeiro e em Salvador.</h1>
+          <p class="hero-subtitle">Venda e locação com atendimento direto, apresentação de alto padrão e oportunidades escolhidas para quem valoriza segurança, estratégia e resultado.</p>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="search-panel shadow-soft h-100" id="filtros">
+          <h2>Busca Inteligente</h2>
+          <form id="searchForm" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Tipo</label>
+              <select id="filtro-tipo" class="form-select filtro-input" name="tipo">
+                <option value="">Todos</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.slug }}">{{ categoria.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Cidade</label>
+              <input class="form-control filtro-input" id="filtro-cidade" name="cidade" list="lista-cidades-site" placeholder="Ex: Salvador ou Rio de Janeiro" autocomplete="off">
+            </div>
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Bairro</label>
+              <input class="form-control filtro-input" id="filtro-bairro" name="bairro" list="lista-bairros-site" placeholder="Ex: Barra ou Stella Maris" autocomplete="off">
+            </div>
+            <datalist id="lista-cidades-site">
+              {% for c in cidades %}
+              <option value="{{ c }}"></option>
+              {% endfor %}
+            </datalist>
+            <datalist id="lista-bairros-site">
+              {% for b in bairros %}
+              <option value="{{ b }}"></option>
+              {% endfor %}
+            </datalist>
+            <div class="col-md-6">
+              <label class="form-label">Faixa de preço até</label>
+              <input class="form-control filtro-input brl-number" id="filtro-preco-max" name="preco_max" type="text" inputmode="numeric" placeholder="3.000.000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ordenar por</label>
+              <select id="filtro-ordenar" name="ordenar" class="form-select filtro-input">
+                <option value="recentes">Mais recentes</option>
+                <option value="preco_asc">Menor preço</option>
+                <option value="preco_desc">Maior preço</option>
+              </select>
+            </div>
+            <div class="col-12 d-grid">
+              <button class="btn btn-cta" type="submit">Buscar Imóveis</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-vitrine py-5" id="vitrine">
+  <div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+      <h2 class="section-title mb-0" id="vitrine-titulo">{% if cidade_filtrada %}Imóveis em {{ cidade_filtrada }}{% else %}Imóveis em Salvador e Rio de Janeiro{% endif %}</h2>
+      <span id="resultado-contador" class="result-pill">{{ imoveis|length }} resultados</span>
+    </div>
+    <div class="row g-4" id="vitrine-imoveis">
+      {% for imovel in imoveis %}
+      <div class="col-md-6 col-xl-4">
+        <article class="property-card h-100">
+          <a href="{{ imovel.url_publica }}" class="property-link">
+            <div class="property-media">
+              {% if imovel.capa %}
+              <img src="{{ imovel.capa.url_800 }}" loading="lazy" alt="{{ imovel.titulo }}">
+              {% endif %}
+              <div class="badges-wrap">
+                {% if imovel.destaque %}<span class="badge badge-soft">Destaque</span>{% endif %}
+                {% if imovel.novo %}<span class="badge badge-new">Novo</span>{% endif %}
+              </div>
+            </div>
+            <div class="property-body">
+              <h3>{{ imovel.titulo }}</h3>
+              <p class="property-location">{{ imovel.bairro }}, {{ imovel.cidade }}</p>
+              <p class="property-price">{{ imovel.preco|brl }}</p>
+              <ul class="property-specs">
+                <li><i class="bi bi-door-open"></i> {{ imovel.quartos }} quartos</li>
+                <li><i class="bi bi-droplet"></i> {{ imovel.banheiros }} banheiros</li>
+                <li><i class="bi bi-car-front"></i> {{ imovel.vagas }} vagas</li>
+                <li><i class="bi bi-aspect-ratio"></i> {{ imovel.area_privativa|int }} m2</li>
+              </ul>
+            </div>
+          </a>
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const filtroInputs = document.querySelectorAll('.filtro-input');
+  const vitrine = document.getElementById('vitrine-imoveis');
+  const contador = document.getElementById('resultado-contador');
+  const vitrineTitulo = document.getElementById('vitrine-titulo');
+  const searchForm = document.getElementById('searchForm');
+  const cidadeInput = document.getElementById('filtro-cidade');
+  const bairrosList = document.getElementById('lista-bairros-site');
+
+  const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  function cardTemplate(imovel) {
+    const badges = `
+      ${imovel.destaque ? '<span class="badge badge-soft">Destaque</span>' : ''}
+      ${imovel.novo ? '<span class="badge badge-new">Novo</span>' : ''}
+    `;
+    return `
+      <div class="col-md-6 col-xl-4">
+        <article class="property-card h-100">
+          <a href="${imovel.url}" class="property-link">
+            <div class="property-media">
+              <img src="${imovel.img}" loading="lazy" alt="${imovel.titulo}">
+              <div class="badges-wrap">${badges}</div>
+            </div>
+            <div class="property-body">
+              <h3>${imovel.titulo}</h3>
+              <p class="property-location">${imovel.bairro}, ${imovel.cidade}</p>
+              <p class="property-price">${brl.format(imovel.preco)}</p>
+              <ul class="property-specs">
+                <li><i class="bi bi-door-open"></i> ${imovel.quartos} quartos</li>
+                <li><i class="bi bi-droplet"></i> ${imovel.banheiros} banheiros</li>
+                <li><i class="bi bi-car-front"></i> ${imovel.vagas} vagas</li>
+                <li><i class="bi bi-aspect-ratio"></i> ${parseInt(imovel.area_privativa, 10)} m2</li>
+              </ul>
+            </div>
+          </a>
+        </article>
+      </div>
+    `;
+  }
+
+  function serializeFilters() {
+    const params = new URLSearchParams();
+    const formData = new FormData(searchForm);
+    for (const [key, value] of formData.entries()) {
+      if (value !== null && value !== '') params.set(key, value);
+    }
+    return params.toString();
+  }
+
+  async function loadFiltered() {
+    const query = serializeFilters();
+    const response = await fetch(`/api/imoveis/filtrar?${query}`);
+    const payload = await response.json();
+    const cidadeAtual = (cidadeInput?.value || '').trim();
+    contador.textContent = `${payload.total} resultados`;
+    if (vitrineTitulo) {
+      vitrineTitulo.textContent = cidadeAtual ? `Imóveis em ${cidadeAtual}` : 'Imóveis em Salvador e Rio de Janeiro';
+    }
+    vitrine.innerHTML = payload.items.length
+      ? payload.items.map(cardTemplate).join('')
+      : '<div class="col-12"><div class="empty-state">Nenhum imóvel encontrado com estes filtros.</div></div>';
+  }
+
+  let debounce;
+  filtroInputs.forEach((input) => {
+    input.addEventListener('change', loadFiltered);
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(loadFiltered, 350);
+    });
+  });
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loadFiltered();
+  });
+
+  function formatThousandsBR(value) {
+    const digits = (value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    return Number(digits).toLocaleString('pt-BR');
+  }
+
+  document.querySelectorAll('.brl-number').forEach((input) => {
+    input.addEventListener('input', () => {
+      input.value = formatThousandsBR(input.value);
+    });
+    input.addEventListener('blur', () => {
+      input.value = formatThousandsBR(input.value);
+    });
+  });
+
+  async function atualizarListaBairrosPorCidade() {
+    if (!cidadeInput || !bairrosList) return;
+    const cidade = cidadeInput.value.trim();
+    const res = await fetch(`/api/bairros?cidade=${encodeURIComponent(cidade)}`);
+    const data = await res.json();
+    bairrosList.innerHTML = (data.items || []).map((b) => `<option value="${b}"></option>`).join('');
+  }
+
+  if (cidadeInput) {
+    cidadeInput.addEventListener('change', atualizarListaBairrosPorCidade);
+    cidadeInput.addEventListener('blur', atualizarListaBairrosPorCidade);
+  }
+
+</script>
+{% endblock %}
