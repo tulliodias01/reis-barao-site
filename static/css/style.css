@@ -71,6 +71,7 @@ h1, h2, h3, h4 {
   object-fit: cover;
   opacity: 1;
   filter: saturate(0.95) contrast(1.02);
+  object-position: center 22%;
 }
 
 .hero-luxury .container {
@@ -460,6 +461,9 @@ h1, h2, h3, h4 {
     min-height: auto;
     padding-bottom: 2rem;
   }
+  .hero-main-image {
+    object-position: center 18%;
+  }
   .hero-content-row {
     min-height: auto;
     align-items: flex-start;
@@ -487,6 +491,20 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 768px) {
+  .hero-luxury {
+    min-height: 88vh;
+    padding-top: 6.2rem;
+  }
+  .hero-main-image {
+    object-position: 58% 14%;
+  }
+  .hero-title {
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+  }
+  .hero-subtitle {
+    font-size: 0.98rem;
+    max-width: 34ch;
+  }
   .lead-box {
     padding: 1rem;
   }
